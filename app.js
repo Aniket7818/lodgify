@@ -20,8 +20,6 @@ const listingsRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-// const mongo_url = "mongodb://127.0.0.1:27017/Lodgify";
-
 const dburl = process.env.ATLASDB_URL;
 
 main()
