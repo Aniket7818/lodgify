@@ -29,7 +29,6 @@ module.exports.showListing = async (req, res) => {
   console.log(listing);
   res.render("listings/show.ejs", { listing });
 };
-
 module.exports.createListing = async (req, res, next) => {
   console.log("Sample Data Test:");
   req.body = {
@@ -40,22 +39,28 @@ module.exports.createListing = async (req, res, next) => {
       price: 100,
     },
   };
+
+  // Geocode the location
   let response = await geocodingClient
     .forwardGeocode({
       query: req.body.listing.location,
       limit: 1,
     })
     .send();
-  res.redirect("/listings");
 
+  // Create new listing object
   let url = req.file.path;
   let filename = req.file.filename;
   const newListing = new Listing(req.body.listing);
   newListing.owner = req.user._id;
   newListing.image = { url, filename };
   newListing.geometry = response.body.features[0].geometry;
+
+  // Save the listing to the database
   await newListing.save();
   req.flash("success", "New List Created!");
+
+  // Now redirect to listings after the listing is created
   res.redirect("/listings");
 };
 
