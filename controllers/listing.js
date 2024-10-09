@@ -31,7 +31,15 @@ module.exports.showListing = async (req, res) => {
 };
 
 module.exports.createListing = async (req, res, next) => {
-  console.log(req.body);
+  console.log("Sample Data Test:");
+  req.body = {
+    listing: {
+      title: "Sample Listing",
+      location: "Sample Location",
+      description: "Sample Description",
+      price: 100,
+    },
+  };
   let response = await geocodingClient
     .forwardGeocode({
       query: req.body.listing.location,
