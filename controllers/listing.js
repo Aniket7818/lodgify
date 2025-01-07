@@ -13,96 +13,93 @@ module.exports.renderNewForm = (req, res) => {
 };
 
 module.exports.showListing = async (req, res) => {
-  let { id } = req.params;
+  const { id } = req.params;
   const listing = await Listing.findById(id)
     .populate({
       path: "reviews",
-      populate: {
-        path: "author",
-      },
+      populate: { path: "author" },
     })
     .populate("owner");
+
   if (!listing) {
-    req.flash("error", "Page you are try to found does't exist!");
-    res.redirect("/listings");
+    req.flash("error", "The page you're looking for doesn't exist.");
+    return res.redirect("/listings");
   }
-  console.log(listing);
+
   res.render("listings/show.ejs", { listing });
 };
+
 module.exports.createListing = async (req, res, next) => {
-  // Geocode the location
-  let response = await geocodingClient
-    .forwardGeocode({
-      query: req.body.listing.location,
-      limit: 1,
-    })
-    .send();
+  try {
+    // Geocode the location
+    const response = await geocodingClient
+      .forwardGeocode({
+        query: req.body.listing.location,
+        limit: 1,
+      })
+      .send();
 
-  // Extract geocoding data
-  const geometry = response.body.features[0].geometry;
+    const geometry = response.body.features[0].geometry;
 
-  // Create a new listing object
-  let url = req.file.path;
-  let filename = req.file.filename;
+    // Create a new listing object
+    const url = req.file?.path || ""; // Handle cases where req.file is undefined
+    const filename = req.file?.filename || "";
 
-  const newListing = new Listing(req.body.listing);
-  newListing.owner = req.user._id;
-  newListing.image = { url, filename };
-  newListing.geometry = geometry;
+    const newListing = new Listing(req.body.listing);
+    newListing.owner = req.user._id;
+    newListing.image = { url, filename };
+    newListing.geometry = geometry;
 
-  // Save the listing to the database
-  await newListing.save();
+    // Save the listing to the database
+    await newListing.save();
 
-  req.flash("success", "New Listing Created!");
-  res.redirect("/listings");
+    req.flash("success", "New Listing Created!");
+    res.redirect("/listings");
+  } catch (error) {
+    next(error); // Pass the error to Express error handler
+  }
 };
 
-// Create new listing object
-let url = req.file.path;
-let filename = req.file.filename;
-const newListing = new Listing(req.body.listing);
-newListing.owner = req.user._id;
-newListing.image = { url, filename };
-newListing.geometry = response.body.features[0].geometry;
-
-// Save the listing to the database
-await newListing.save();
-req.flash("success", "New List Created!");
-
-// Now redirect to listings after the listing is created
-res.redirect("/listings");
-
 module.exports.editListing = async (req, res) => {
-  let { id } = req.params;
+  const { id } = req.params;
   const listing = await Listing.findById(id);
+
   if (!listing) {
-    req.flash("error", "Page you are try to found does't exist!");
-    res.redirect("/listings");
+    req.flash("error", "The page you're looking for doesn't exist.");
+    return res.redirect("/listings");
   }
-  let originalImageUrl = listing.image.url;
-  originalImageUrl = originalImageUrl.replace("/upload", "/upload/w_250");
+
+  const originalImageUrl = listing.image.url.replace(
+    "/upload",
+    "/upload/w_250"
+  );
   res.render("listings/edit.ejs", { listing, originalImageUrl });
 };
 
 module.exports.updateListing = async (req, res) => {
   if (!req.body.listing) {
-    throw new ExpressError(400, "Send valid data for listing.");
+    req.flash("error", "Invalid data provided.");
+    return res.redirect("/listings");
   }
-  let { id } = req.params;
-  let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
-  if (typeof req.file !== "undefined") {
-    let url = req.file.path;
-    let filename = req.file.filename;
+
+  const { id } = req.params;
+  const listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+
+  if (req.file) {
+    const url = req.file.path;
+    const filename = req.file.filename;
     listing.image = { url, filename };
     await listing.save();
   }
+
   req.flash("success", "Listing Updated!");
   res.redirect(`/listings/${id}`);
 };
 
 module.exports.deleteListing = async (req, res) => {
-  let { id } = req.params;
+  const { id } = req.params;
   await Listing.findByIdAndDelete(id);
+
   req.flash("success", "Listing Deleted!");
   res.redirect("/listings");
 };
