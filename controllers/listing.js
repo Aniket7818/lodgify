@@ -30,39 +30,37 @@ module.exports.showListing = async (req, res) => {
   res.render("listings/show.ejs", { listing });
 };
 module.exports.createListing = async (req, res, next) => {
-  console.log("Sample Data Test:");
-  req.body = {
-    listing: {
-      title: "Sample Listing",
-      location: "Sample Location",
-      description: "Sample Description",
-      price: 100,
-    },
-  };
-
-  // Geocode the location
-  let response = await geocodingClient
-    .forwardGeocode({
-      query: req.body.listing.location,
-      limit: 1,
-    })
-    .send();
-
-  // Create new listing object
-  let url = req.file.path;
-  let filename = req.file.filename;
   const newListing = new Listing(req.body.listing);
   newListing.owner = req.user._id;
   newListing.image = { url, filename };
-  newListing.geometry = response.body.features[0].geometry;
 
-  // Save the listing to the database
   await newListing.save();
-  req.flash("success", "New List Created!");
-
-  // Now redirect to listings after the listing is created
+  req.flash("success", "New Listing is Created !.");
   res.redirect("/listings");
 };
+
+// Geocode the location
+let response = await geocodingClient
+  .forwardGeocode({
+    query: req.body.listing.location,
+    limit: 1,
+  })
+  .send();
+
+// Create new listing object
+let url = req.file.path;
+let filename = req.file.filename;
+const newListing = new Listing(req.body.listing);
+newListing.owner = req.user._id;
+newListing.image = { url, filename };
+newListing.geometry = response.body.features[0].geometry;
+
+// Save the listing to the database
+await newListing.save();
+req.flash("success", "New List Created!");
+
+// Now redirect to listings after the listing is created
+res.redirect("/listings");
 
 module.exports.editListing = async (req, res) => {
   let { id } = req.params;
