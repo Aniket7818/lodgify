@@ -28,9 +28,12 @@ module.exports.showListing = async (req, res) => {
 
   res.render("listings/show.ejs", { listing });
 };
-
 module.exports.createListing = async (req, res, next) => {
   try {
+    console.log("MAP TOKEN:", process.env.MAP_TOKEN);
+    console.log("REQ.BODY:", req.body);
+    console.log("REQ.FILE:", req.file); // Check if image is uploaded
+
     // Geocode the location
     const response = await geocodingClient
       .forwardGeocode({
@@ -39,10 +42,14 @@ module.exports.createListing = async (req, res, next) => {
       })
       .send();
 
-    const geometry = response.body.features[0].geometry;
+    const geometry = response.body.features[0]?.geometry;
+    if (!geometry) {
+      console.error("Geocoding failed: No geometry found.");
+      throw new Error("Could not find location.");
+    }
 
-    // Create a new listing object
-    const url = req.file?.path || ""; // Handle cases where req.file is undefined
+    // Handle Cloudinary upload
+    const url = req.file?.path || "";
     const filename = req.file?.filename || "";
 
     const newListing = new Listing(req.body.listing);
@@ -50,13 +57,13 @@ module.exports.createListing = async (req, res, next) => {
     newListing.image = { url, filename };
     newListing.geometry = geometry;
 
-    // Save the listing to the database
     await newListing.save();
 
     req.flash("success", "New Listing Created!");
     res.redirect("/listings");
   } catch (error) {
-    next(error); // Pass the error to Express error handler
+    console.error("Error creating listing:", error);
+    next(error); // Express will handle this error
   }
 };
 
