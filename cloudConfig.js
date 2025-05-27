@@ -11,7 +11,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "RentNest_DEV",
-    allowedformat: ["jpg", "png", "jpeg"],
+    allowed_formats: ["jpg", "png", "jpeg"], // ✅ corrected key
   },
 });
 
